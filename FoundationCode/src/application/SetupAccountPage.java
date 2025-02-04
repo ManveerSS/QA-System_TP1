@@ -39,7 +39,13 @@ public class SetupAccountPage {
         inviteCodeField.setPromptText("Enter InvitationCode");
         inviteCodeField.setMaxWidth(250);
         
-        // Label to display error messages for invalid input or registration issues
+        // Label to display username, password, or other miscellaneous errors
+        Label userNameErrorLabel = new Label();
+        userNameErrorLabel.setStyle("-fx-text-fill: red; -fx-font-size: 12px;");
+
+        Label passwordErrorLabel = new Label();
+        passwordErrorLabel.setStyle("-fx-text-fill: red; -fx-font-size: 12px;");
+        
         Label errorLabel = new Label();
         errorLabel.setStyle("-fx-text-fill: red; -fx-font-size: 12px;");
         
@@ -52,37 +58,65 @@ public class SetupAccountPage {
             String password = passwordField.getText();
             String code = inviteCodeField.getText();
             
-            try {
-            	// Check if the user already exists
-            	if(!databaseHelper.doesUserExist(userName)) {
-            		
-            		// Validate the invitation code
-            		if(databaseHelper.validateInvitationCode(code)) {
-            			
-            			// Create a new user and register them in the database
-		            	User user=new User(userName, password, "user");
-		                databaseHelper.register(user);
-		                
-		             // Navigate to the Welcome Login Page
-		                new WelcomeLoginPage(databaseHelper).show(primaryStage,user);
-            		}
-            		else {
-            			errorLabel.setText("Please enter a valid invitation code");
-            		}
-            	}
-            	else {
-            		errorLabel.setText("This useruserName is taken!!.. Please use another to setup an account");
-            	}
-            	
-            } catch (SQLException e) {
-                System.err.println("Database error: " + e.getMessage());
-                e.printStackTrace();
+            // Set up user fields and error message string for validity check
+            String validUserName = "";
+            String validPassword = "";
+            String errMsg = "";
+            
+            // Checks if username satisfies requirements using the UserNAmeRecognizer class
+            // If the error message is empty, then it is valid
+            errMsg = UserNameRecognizer.checkForValidUserName(userName);	
+            if (errMsg != "") {
+            	userNameErrorLabel.setText(errMsg);
+            } else {
+            	validUserName = userName;
+            	userNameErrorLabel.setText(null);
+            }
+            
+            // Checks if password satisfies requirements 
+            // If the error message is empty, then it passes
+            errMsg = PasswordEvaluator.evaluatePassword(password);
+            if (errMsg != "") {
+        		passwordErrorLabel.setText(errMsg);
+            } else {
+            	validPassword = password;
+            	passwordErrorLabel.setText(null);
+            }
+            
+            // If the username and password is validated, it will bypass this check to create a new user
+            if (validUserName != "" && validPassword != "") { 
+	            try {
+	            	// Check if the user already exists
+	            	if(!databaseHelper.doesUserExist(userName)) {
+	            		
+	            		// Validate the invitation code
+	            		if(databaseHelper.validateInvitationCode(code)) {
+	            			
+	            			// Create a new user and register them in the database
+			            	User user=new User(userName, password, "user");
+			                databaseHelper.register(user);
+			                
+			             // Navigate to the Welcome Login Page
+			                new WelcomeLoginPage(databaseHelper).show(primaryStage,user);
+	            		}
+	            		else {
+	            			errorLabel.setText("Please enter a valid invitation code");
+	            		}
+	            	}
+	            	else {
+	            		errorLabel.setText("This useruserName is taken!!.. Please use another to setup an account");
+	            	}
+	            	
+	            } catch (SQLException e) {
+	                System.err.println("Database error: " + e.getMessage());
+	                e.printStackTrace();
+	            }
             }
         });
 
         VBox layout = new VBox(10);
         layout.setStyle("-fx-padding: 20; -fx-alignment: center;");
-        layout.getChildren().addAll(userNameField, passwordField,inviteCodeField, setupButton, errorLabel);
+        layout.getChildren().addAll(userNameField, userNameErrorLabel, passwordField, passwordErrorLabel, inviteCodeField, setupButton, errorLabel);
 
         primaryStage.setScene(new Scene(layout, 800, 400));
         primaryStage.setTitle("Account Setup");
